@@ -157,57 +157,6 @@ namespace Reddit.AuthTokenRetriever
 
                         // Fire the auth success event with the token in the event args.  --Kris
                         AuthSuccess?.Invoke(this, new AuthSuccessEventArgs { AccessToken = oAuthToken.AccessToken, RefreshToken = oAuthToken.RefreshToken });
-
-                        // Generate the success page.  --Kris
-                        string[] sArr = state.Split(':');
-                        if (sArr == null || sArr.Length == 0)
-                        {
-                            throw new Exception("State must consist of 'appId:appSecret'!");
-                        }
-
-                        string appId = sArr[0];
-                        string appSecret = (sArr.Length >= 2 ? sArr[1] : null);
-
-                        string html;
-                        using (Stream stream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("AuthTokenRetrieverLib.Templates.Success.html"))
-                        {
-                            using (StreamReader streamReader = new StreamReader(stream))
-                            {
-                                html = streamReader.ReadToEnd();
-                            }
-                        }
-
-                        html = html.Replace("REDDIT_OAUTH_ACCESS_TOKEN", oAuthToken.AccessToken);
-                        html = html.Replace("REDDIT_OAUTH_REFRESH_TOKEN", oAuthToken.RefreshToken);
-
-                        // If enabled, output the token to a JSON file in the current directory.  --Kris
-                        if (generateLocalOutput)
-                        {
-                            string tokenSavedHtml;
-                            using (Stream stream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("AuthTokenRetrieverLib.Templates.TokenSaved.html"))
-                            {
-                                using (StreamReader streamReader = new StreamReader(stream))
-                                {
-                                    tokenSavedHtml = streamReader.ReadToEnd();
-                                }
-                            }
-
-                            string fileExt = "." + appId + "." + (!string.IsNullOrWhiteSpace(appSecret) ? appSecret + "." : "") + "json";
-
-                            string tokenPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar
-                                + "RDNOauthToken_" + DateTime.Now.ToString("yyyyMMddHHmmssffff") + fileExt;
-
-                            File.WriteAllText(tokenPath, JsonConvert.SerializeObject(oAuthToken));
-
-                            html = html.Replace("TOKEN_SAVED", tokenSavedHtml.Replace("LOCAL_TOKEN_PATH", tokenPath));
-                        }
-                        else
-                        {
-                            html = html.Replace("TOKEN_SAVED", "");
-                        }
-
-                        // Send the success page.  --Kris
-                        context.Response = new uhttpsharp.HttpResponse(HttpResponseCode.Ok, Encoding.UTF8.GetBytes(html), false);
                     }
 
                     return Task.Factory.GetCompleted();
